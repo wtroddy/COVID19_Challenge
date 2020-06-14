@@ -22,6 +22,6 @@ train_files = glob(train_data_dir+"*.csv")
 test_files = glob(test_data_dir+"*.csv")
 
 ### convert csv files to sqlite 
-options = csv_to_sqlite.CsvOptions(typing_style="full") #, encoding="windows-1250") 
+options = csv_to_sqlite.CsvOptions(typing_style="full")
 csv_to_sqlite.write_csv(test_files, sqlite_dir+"covid_test.sqlite", options)
 csv_to_sqlite.write_csv(train_files, sqlite_dir+"covid_train.sqlite", options)
