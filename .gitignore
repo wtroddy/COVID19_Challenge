@@ -2,3 +2,5 @@
 *.zip
 *.sqlite
 *.sqlite-journal
+*.tar.gz
+*.txt
