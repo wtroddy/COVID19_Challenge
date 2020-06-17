@@ -8,7 +8,7 @@ Script to load precisionFDA COVID 19
 import sqlite3
 import pandas as pd
 import numpy as np
-
+import matplotlib as plt
 
 ### dir management
 train_data_dir = "../data/csv/train/"
@@ -21,6 +21,7 @@ sqlite_dir = "../data/sqlite/"
 # db
 train_db = sqlite3.connect(sqlite_dir+"covid_train.sqlite")
 
+"""
 # tables 
 conditions = pd.read_sql_query("SELECT * FROM conditions;", train_db)
 medications = pd.read_sql_query("SELECT * FROM medications;", train_db)
@@ -32,6 +33,6 @@ pd.read_sql_query("SELECT CODE, DESCRIPTION, COUNT(*) AS num_dx FROM conditions 
 
 # covid patients
 covid_pids = conditions[conditions.CODE == 840539006].PATIENT.unique()
+"""
 
-
-
+pts = pd.read_sql_query("SELECT * FROM patients_covid_data", train_db)
