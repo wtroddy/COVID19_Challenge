@@ -4,6 +4,13 @@ SET DEATHDATE = NULL
 WHERE length(patients.DEATHDATE) = 0
 ;
 
+/* Zero Legnth Condition Dates to NULL */
+UPDATE conditions
+SET STOP = NULL 
+WHERE length(conditions.STOP) = 0
+;
+
+
 /* Add COVID+ flag to patients table */
 --- add column
 ALTER TABLE patients 
