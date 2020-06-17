@@ -1,3 +1,15 @@
+/* Zero Length Dth Dates to NULL */
+UPDATE patients
+SET DEATHDATE = NULL 
+WHERE length(patients.DEATHDATE) = 0
+;
+
+/* Zero Legnth Condition Dates to NULL */
+UPDATE conditions
+SET STOP = NULL 
+WHERE length(conditions.STOP) = 0
+;
+
 /* ventilated */
 DROP TABLE IF EXISTS covid_pts_vent;
 CREATE TABLE covid_pts_vent AS

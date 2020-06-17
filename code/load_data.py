@@ -8,31 +8,36 @@ Script to load precisionFDA COVID 19
 import sqlite3
 import pandas as pd
 import numpy as np
-import matplotlib as plt
 
 ### dir management
-train_data_dir = "../data/csv/train/"
-test_data_dir = "../data/csv/test/"
 # sqlite
 sqlite_dir = "../data/sqlite/"
 
-
 ### load train data
-# db
+# set db object
 train_db = sqlite3.connect(sqlite_dir+"covid_train.sqlite")
+# load training patient data
+train_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", train_db)
 
-"""
-# tables 
-conditions = pd.read_sql_query("SELECT * FROM conditions;", train_db)
-medications = pd.read_sql_query("SELECT * FROM medications;", train_db)
+### example model
+# predictor variables
+x = train_pts.loc[:,['COVID_FLAG','AGE_AT_DX','AGE_AT_DEATH','DAYS_SICK','VENT_FLAG']]
+# fix column types
+x.loc[:,'COVID_FLAG'] = x.loc[:,'COVID_FLAG'].astype('int')
+x.loc[:,'VENT_FLAG'] = x.loc[:,'VENT_FLAG'].astype('int')
 
-pd.read_sql
+# outcome variable 
+y = train_pts['DECEASED']
 
-# qrys
-pd.read_sql_query("SELECT CODE, DESCRIPTION, COUNT(*) AS num_dx FROM conditions GROUP BY CODE, DESCRIPTION ORDER BY num_dx DESC;", train_db)
+### xgboost training 
+from xgboost import XGBClassifier 
+model = XGBClassifier()
+model.fit(x,y)
 
-# covid patients
-covid_pids = conditions[conditions.CODE == 840539006].PATIENT.unique()
-"""
-
-pts = pd.read_sql_query("SELECT * FROM patients_covid_data", train_db)
+### xgboost testing
+y_pred = model.predict(x)
+predictions = [round(value) for value in y_pred]
+# evaluate predictions
+from sklearn.metrics import accuracy_score
+accuracy = accuracy_score(y, predictions)
+print("Accuracy: %.2f%%" % (accuracy * 100.0))

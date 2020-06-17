@@ -1,4 +1,4 @@
-/* Zero Legnth Dth Dates to NULL */
+/* Zero Length Dth Dates to NULL */
 UPDATE patients
 SET DEATHDATE = NULL 
 WHERE length(patients.DEATHDATE) = 0
