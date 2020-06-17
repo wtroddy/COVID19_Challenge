@@ -27,12 +27,16 @@ sql_statements = open("./sql/Py_SQL_Statements_COVID_DB.sql", "r").read()
 
 ### convert csv files to sqlite 
 options = csv_to_sqlite.CsvOptions(typing_style="full")
-# test db
-csv_to_sqlite.write_csv(test_files, sqlite_dir+"covid_test.sqlite", options)
-test_db = sqlite3.connect(sqlite_dir+"covid_test.sqlite")
-test_db.execute(sql_statements)
 
-# train db
+# create test db
+csv_to_sqlite.write_csv(test_files, sqlite_dir+"covid_test.sqlite", options)
+
+# cleaning and add new tables
+test_db = sqlite3.connect(sqlite_dir+"covid_test.sqlite")
+test_db.executescript(sql_statements)
+
+# create train db
 csv_to_sqlite.write_csv(train_files, sqlite_dir+"covid_train.sqlite", options)
+# cleaning and add new tables 
 train_db = sqlite3.connect(sqlite_dir+"covid_train.sqlite")
-train_db.execute(sql_statements)
+train_db.executescript(sql_statements)
