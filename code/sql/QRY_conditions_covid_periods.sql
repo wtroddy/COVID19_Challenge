@@ -11,6 +11,6 @@ SELECT conditions.*,
     --- Comorbid Conditions
     (MAX(START, COVID_START)<=MIN(COALESCE(STOP,COVID_STOP,DEATHDATE), COALESCE(COVID_STOP,covid_patient_data.DEATHDATE))) AS comorbid_condition_flag
 FROM covid_patient_data
-LEFT JOIN conditions ON covid_patient_data.Id = conditions.PATIENT
+INNER JOIN conditions ON covid_patient_data.Id = conditions.PATIENT
 ;
 

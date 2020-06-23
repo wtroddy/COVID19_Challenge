@@ -9,5 +9,5 @@ SELECT medications.*,
     --- Comorbid medications
     (MAX(START, COVID_START)<=MIN(COALESCE(STOP,COVID_STOP,DEATHDATE), COALESCE(COVID_STOP,covid_patient_data.DEATHDATE))) AS comorbid_medication_flag
 FROM covid_patient_data
-LEFT JOIN medications ON covid_patient_data.Id = medications.PATIENT
+INNER JOIN medications ON covid_patient_data.Id = medications.PATIENT
 ;
