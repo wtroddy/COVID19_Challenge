@@ -5,3 +5,8 @@
 *.tar.gz
 *.txt
 *.png
+*.config
+*.info
+*.input
+*.text
+*.xml

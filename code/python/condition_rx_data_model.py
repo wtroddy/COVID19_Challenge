@@ -48,13 +48,7 @@ qry = """SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
         SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
                  FROM medications_covid_epochs
                  WHERE pre_covid_medication = 1 OR pre_covid_medication IS NULL
-                 GROUP BY PATIENT, CODE, DESCRIPTION
-        UNION 
-        SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-                 FROM procedures_covid_epochs
-                 WHERE pre_covid_procedure = 1 OR pre_covid_procedure IS NULL
-                 GROUP BY PATIENT, CODE, DESCRIPTION           
-                 ; """
+                 GROUP BY PATIENT, CODE, DESCRIPTION; """
 
 #comorbid_condition_flag = 1 OR comorbid_condition_flag IS NULL
 
@@ -87,19 +81,20 @@ m.ETHNICITY = m.ETHNICITY.replace("hispanic", 1)
 
 
 ### model name 
-mod_name = "COVIDFLAG_PreMedications_PreConditions_PreProcedures"
+mod_name = "COVIDFLAG_BOOL_PreMedications_PreConditions"
 
 ### select input columns 
 x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY"]) #, "AGE_AT_DX"])
 
 ### conditions model
-y = m.loc[:,'COVID_FLAG']
-#y = m.loc[:, 'ICU_FLAG']
+y = m.loc[:,'COVID_FLAG'].astype(bool)
+#y = m.loc[:, 'ICU_FLAG'].astype(bool)
+#y = m.loc[:,'DECEASED'].astype(bool)
 x = m.loc[:, x_columns]
 
 # change type
 #x = x.astype(int)
-y = y.astype(int)
+#y = y.astype(int)
 
 ### run model
 model = xgm.TrainModel(x, y, mod_name)
