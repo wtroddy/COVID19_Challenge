@@ -10,6 +10,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from xgboost_model import TrainModel
+
 # options
 pd.set_option('display.max_columns', 10)
 
@@ -29,32 +31,24 @@ train_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", train_db)
 test_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", test_db)
 
 
-# load conditions and medications
+# load conditions 
 qry = """SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-                 FROM conditions_covid_epochs
-                 WHERE (pre_covid_condition = 1 OR pre_covid_condition IS NULL) AND
-                       DESCRIPTION NOT LIKE '%COVID%'
-                 GROUP BY PATIENT, CODE, DESCRIPTION
-        UNION 
-        SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-                 FROM medications_covid_epochs
-                 WHERE comorbid_medication_flag = 1 OR comorbid_medication_flag IS NULL
-                 GROUP BY PATIENT, CODE, DESCRIPTION; """
-
-#comorbid_condition_flag = 1 OR comorbid_condition_flag IS NULL
+         FROM conditions_covid_epochs
+         WHERE pre_covid_condition = 1 OR pre_covid_condition IS NULL
+         GROUP BY PATIENT, CODE, DESCRIPTION;"""
 
 pts_conditions = pd.read_sql_query(qry, train_db) 
 
 pts_conditions['CODE'] = 'snomed_code_'+pts_conditions['CODE'].astype(str)
 pts_conditions['DESCRIPTION'] = pts_conditions['DESCRIPTION'].replace('\W', '', regex=True)
-
+# pts_conditions['DESCRIPTION'].replace('\s', '_', regex=True).replace('\\(', '', regex=True).replace('\\)', '', regex=True)
 
 # wide
 #pts_conditions_wide = pts_conditions.pivot(index = "PATIENT", columns = "CODE", values = "num")
 pts_conditions_wide = pts_conditions.pivot(index = "PATIENT", columns = "DESCRIPTION", values = "num")
 
 m = pd.merge(train_pts, pts_conditions_wide, left_on = 'Id', right_on = 'PATIENT', how = 'left')
-#m = m.fillna(0)
+m = m.fillna(0)
 
 ### recode variables as numeric values 
 # gender
@@ -71,15 +65,15 @@ m.ETHNICITY = m.ETHNICITY.replace("nonhispanic", 0)
 m.ETHNICITY = m.ETHNICITY.replace("hispanic", 1)
 
 ### select input columns 
-x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY"]) #, "AGE_AT_DX"])
+x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY", "AGE_AT_DX"])
 
 ### conditions model
-y = m.loc[:,'COVID_FLAG']
-#y = m.loc[:, 'ICU_FLAG']
+#y = m.loc[:,'COVID_FLAG']
+y = m.loc[:, 'ICU_FLAG']
 x = m.loc[:, x_columns]
 
 # change type
-#x = x.astype(int)
+x = x.astype(int)
 y = y.astype(int)
 
 # split

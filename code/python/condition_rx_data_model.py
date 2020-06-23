@@ -5,17 +5,26 @@ Script to load precisionFDA COVID 19
 """
 
 # libs
+import os 
 import sqlite3
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+from xgboost_model import xgboost_model
+
+
+# init class
+xgm = xgboost_model()
 
 # options
 pd.set_option('display.max_columns', 10)
 
 ### dir management
+# main dir
+main_dir = "C:/Users/wtrod/Documents/precisionFDA/COVID19_Challenge/"
+os.chdir(main_dir)
 # sqlite
-sqlite_dir = "../data/sqlite/"
+sqlite_dir = "./data/sqlite/"
 
 ### load train data
 # set db object
@@ -29,24 +38,38 @@ train_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", train_db)
 test_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", test_db)
 
 
-# load conditions 
+# load conditions and medications
 qry = """SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-         FROM conditions_covid_epochs
-         WHERE pre_covid_condition = 1 OR pre_covid_condition IS NULL
-         GROUP BY PATIENT, CODE, DESCRIPTION;"""
+                 FROM conditions_covid_epochs
+                 WHERE (pre_covid_condition = 1 OR pre_covid_condition IS NULL) AND
+                       DESCRIPTION NOT LIKE '%COVID%'
+                 GROUP BY PATIENT, CODE, DESCRIPTION
+        UNION 
+        SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
+                 FROM medications_covid_epochs
+                 WHERE pre_covid_medication = 1 OR pre_covid_medication IS NULL
+                 GROUP BY PATIENT, CODE, DESCRIPTION
+        UNION 
+        SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
+                 FROM procedures_covid_epochs
+                 WHERE pre_covid_procedure = 1 OR pre_covid_procedure IS NULL
+                 GROUP BY PATIENT, CODE, DESCRIPTION           
+                 ; """
+
+#comorbid_condition_flag = 1 OR comorbid_condition_flag IS NULL
 
 pts_conditions = pd.read_sql_query(qry, train_db) 
 
 pts_conditions['CODE'] = 'snomed_code_'+pts_conditions['CODE'].astype(str)
 pts_conditions['DESCRIPTION'] = pts_conditions['DESCRIPTION'].replace('\W', '', regex=True)
-# pts_conditions['DESCRIPTION'].replace('\s', '_', regex=True).replace('\\(', '', regex=True).replace('\\)', '', regex=True)
+
 
 # wide
 #pts_conditions_wide = pts_conditions.pivot(index = "PATIENT", columns = "CODE", values = "num")
 pts_conditions_wide = pts_conditions.pivot(index = "PATIENT", columns = "DESCRIPTION", values = "num")
 
 m = pd.merge(train_pts, pts_conditions_wide, left_on = 'Id', right_on = 'PATIENT', how = 'left')
-m = m.fillna(0)
+
 
 ### recode variables as numeric values 
 # gender
@@ -62,42 +85,31 @@ m.RACE = m.RACE.replace("other", 4)
 m.ETHNICITY = m.ETHNICITY.replace("nonhispanic", 0)
 m.ETHNICITY = m.ETHNICITY.replace("hispanic", 1)
 
+
+### model name 
+mod_name = "COVIDFLAG_PreMedications_PreConditions_PreProcedures"
+
 ### select input columns 
-x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY", "AGE_AT_DX"])
+x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY"]) #, "AGE_AT_DX"])
 
 ### conditions model
-#y = m.loc[:,'COVID_FLAG']
-y = m.loc[:, 'ICU_FLAG']
+y = m.loc[:,'COVID_FLAG']
+#y = m.loc[:, 'ICU_FLAG']
 x = m.loc[:, x_columns]
 
 # change type
-x = x.astype(int)
+#x = x.astype(int)
 y = y.astype(int)
 
-# split
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.3)
+### run model
+model = xgm.TrainModel(x, y, mod_name)
 
-### xgboost training 
-from xgboost import XGBClassifier 
-model = XGBClassifier()
-model.fit(X_train,y_train)
+### set output folder
+xgm.setOutputFolder(main_dir+"./output/"+mod_name)
 
-### features
+### print tree
+xgm.PlotModelTree(model, mod_name)
+
+# features
 FeatureImportances = pd.DataFrame({'FeatureName':x_columns, 'FeatureImportance':model.feature_importances_})
-
-### xgboost testing
-y_pred = model.predict(X_test)
-predictions = [round(value) for value in y_pred]
-# evaluate predictions
-from sklearn.metrics import accuracy_score
-accuracy = accuracy_score(y_test, predictions)
-print("Accuracy: %.2f%%" % (accuracy * 100.0))
-
-
-### plot tree
-from xgboost import plot_tree
-plot_tree(model, rankdir='LR')
-fig = plt.gcf()
-fig.set_size_inches(150, 100)
-fig.savefig('tree_GenderEthnicRace.png')
+    
