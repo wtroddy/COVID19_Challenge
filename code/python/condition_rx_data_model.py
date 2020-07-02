@@ -39,18 +39,34 @@ test_pts = pd.read_sql_query("SELECT * FROM covid_patient_data", test_db)
 
 
 # load conditions and medications
-qry = """SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-                 FROM conditions_covid_epochs
-                 WHERE (pre_covid_condition = 1 OR pre_covid_condition IS NULL) AND
-                       DESCRIPTION NOT LIKE '%COVID%'
-                 GROUP BY PATIENT, CODE, DESCRIPTION
-        UNION 
-        SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
-                 FROM medications_covid_epochs
-                 WHERE pre_covid_medication = 1 OR pre_covid_medication IS NULL
-                 GROUP BY PATIENT, CODE, DESCRIPTION; """
+# qry = """SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
+#                  FROM conditions_covid_epochs
+#                  WHERE (pre_covid_condition = 1 OR pre_covid_condition IS NULL) AND
+#                        DESCRIPTION NOT LIKE '%COVID%'
+#                  GROUP BY PATIENT, CODE, DESCRIPTION
+#         UNION 
+#         SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
+#                  FROM medications_covid_epochs_class
+#                  WHERE pre_covid_medication = 1 OR pre_covid_medication IS NULL
+#                  GROUP BY PATIENT, CODE, DESCRIPTION; """
 
-#comorbid_condition_flag = 1 OR comorbid_condition_flag IS NULL
+qry = """SELECT PATIENT, CODE, DESCRIPTION, SUM(num) AS num
+        FROM 
+        (SELECT PATIENT, CODE, DESCRIPTION, COUNT(*) AS num
+         FROM conditions_covid_epochs
+         WHERE (pre_covid_condition = 1 OR COVID_FLAG = 0) AND
+               DESCRIPTION NOT LIKE '%COVID%'
+        GROUP BY PATIENT, CODE, DESCRIPTION
+        UNION 
+        SELECT PATIENT, 
+                COALESCE(classId, CODE) AS CODE, 
+                COALESCE(name, DESCRIPTION) AS DESCRIPTION, 
+                COUNT(*) AS num
+        FROM medications_covid_epochs_class
+        WHERE pre_covid_medication = 1 OR COVID_FLAG = 0
+        GROUP BY PATIENT, CODE, DESCRIPTION) as raw
+        GROUP BY PATIENT, CODE, DESCRIPTION; """
+
 
 pts_conditions = pd.read_sql_query(qry, train_db) 
 
@@ -81,20 +97,18 @@ m.ETHNICITY = m.ETHNICITY.replace("hispanic", 1)
 
 
 ### model name 
-mod_name = "COVIDFLAG_BOOL_PreMedications_PreConditions"
+mod_name = "ICUFLAG_BOOL_PreConditions_PreRxClass"
 
 ### select input columns 
 x_columns = np.append(pts_conditions_wide.columns.values, ["GENDER", "RACE", "ETHNICITY"]) #, "AGE_AT_DX"])
 
 ### conditions model
-y = m.loc[:,'COVID_FLAG'].astype(bool)
-#y = m.loc[:, 'ICU_FLAG'].astype(bool)
+#y = m.loc[:,'COVID_FLAG'].astype(bool)
+y = m.loc[:, 'ICU_FLAG'].astype(bool)
 #y = m.loc[:,'DECEASED'].astype(bool)
 x = m.loc[:, x_columns]
 
-# change type
-#x = x.astype(int)
-#y = y.astype(int)
+
 
 ### run model
 model = xgm.TrainModel(x, y, mod_name)
