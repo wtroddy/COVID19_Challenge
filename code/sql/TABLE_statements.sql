@@ -130,7 +130,7 @@ CREATE TABLE encounters_covid_epochs AS
 																					   )
 	) AS comorbid_condition_flag
 FROM covid_patient_data
-LEFT JOIN encounters ON covid_patient_data.Id = encounters.PATIENT
+INNER JOIN encounters ON covid_patient_data.Id = encounters.PATIENT
 ;
 
 /* Medications + COVID epochs */

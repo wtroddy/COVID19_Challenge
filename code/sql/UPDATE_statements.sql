@@ -10,6 +10,16 @@ SET STOP = NULL
 WHERE length(conditions.STOP) = 0
 ;
 
+/* Zero Legnth Encounter REASONCODE and REASONDESCRIPTION to NULL */
+UPDATE encounters
+SET REASONCODE = NULL 
+WHERE length(encounters.REASONCODE) = 0
+;
+
+UPDATE encounters
+SET REASONDESCRIPTION = NULL 
+WHERE length(encounters.REASONDESCRIPTION) = 0
+;
 
 /* Add COVID+ flag to patients table */
 --- add column
