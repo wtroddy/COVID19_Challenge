@@ -1,15 +1,17 @@
 """
-Script to load precisionFDA COVID 19
-    https://precision.fda.gov/challenges/11
+COVID Model - Train and Predict for Challenge
 
+https://precision.fda.gov/challenges/11
 """
 
 # libs
 import os
 import pandas as pd
 import numpy as np
-#import matplotlib.pyplot as plt
 from xgboost_model import xgboost_model
+
+# init class
+xgm = xgboost_model()
 
 # change dir
 main_dir = "C:/Users/wtrod/Documents/precisionFDA/COVID19_Challenge/"
@@ -50,10 +52,9 @@ y_outcomes = [['COVID_FLAG', bool],
               ['ICU_DAYS', int], 
               ['VENT_FLAG', bool], 
               ['COVID_DECEASED', bool],
-              ['COVID_ALIVE', bool]]
+              ['COVID_ALIVE', bool]
+              ]
 
-# init class
-xgm = xgboost_model()
 
 for i in y_outcomes:    
     ### select data
@@ -65,18 +66,25 @@ for i in y_outcomes:
            
     # model name 
     mod_name = (i[0])
-    
     # set output folder
     xgm.setOutputFolder(main_dir+"./output/"+mod_name)
-    
     # run model
-    model = xgm.TrainEvalModel(train_x, train_y, mod_name)
+    model, y_pred_proba = xgm.PredictModel(train_x, train_y, test_x)
     
-    # print tree
-    xgm.PlotModelTree(model, mod_name)
+    # get the outcome or score
+    if i[1] == int:
+        predict_outcome_score = np.argmax(y_pred_proba, axis=1)
+    else:
+        predict_outcome_score = y_pred_proba[:,1]
+        
+    # merge with the patient ID
+    model_prediction = pd.DataFrame({'Id':test_pt_data['Id'], 'predict_outcome_score':predict_outcome_score}, columns = ["Id", "predict_outcome_score"])
     
-    # features
-    FeatureImportances = pd.DataFrame({'FeatureName':x_columns, 'FeatureImportance':model.feature_importances_})
+    # output predictions
+    model_prediction.to_csv(xgm.getOutputFolder()+"/predictions.csv", header = None, index = False, line_terminator='\n')
+    
 
 
-# 
+
+
+

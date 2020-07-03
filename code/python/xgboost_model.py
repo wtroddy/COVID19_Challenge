@@ -83,7 +83,18 @@ class xgboost_model:
 
         # return 
         return model
-    
+
+    def PredictModel(self, x_train, y_train, x_test):
+        ### xgboost training 
+        model = XGBClassifier(max_depth = 10, learning_rate = 0.05)
+        model.fit(x_train, y_train)
+        
+        ### xgboost testing
+        y_pred_proba = model.predict_proba(x_test)
+
+        # return 
+        return model, y_pred_proba
+
     ### Model Tree Plotter
     def PlotModelTree(self, model, model_name):
         # plot tree
