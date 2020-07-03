@@ -8,7 +8,8 @@ Data preprocessing was conducted using SQLite. Combining python scripts and SQL 
 
 Scripts used for this step:
 * .\code\python\
-	* convert_data_sqlitedb.py: this script first creates sqlite dbs from the train and test csv files and then runs a series of sql statements
+	* convert_data_sqlitedb.py: 
+		this script first creates sqlite dbs from the train and test csv files and then runs a series of sql statements
 * .\code\sql\
 
 ## Medications Preprocessing
