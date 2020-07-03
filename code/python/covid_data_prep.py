@@ -9,9 +9,17 @@ import os
 import sqlite3
 import pandas as pd
 
+# options
+pd.set_option('display.max_columns', 10)
+
 ### set vars
-input_dict = {"test_db": ["./data/sqlite/covid_test.sqlite"],
-              "train_db": ["./data/sqlite/covid_train.sqlite"]
+input_dict = {"test_db": ["./data/sqlite/covid_test.sqlite", 
+                          "./data/flat_files/test_data.csv",
+                          "./data/flat_files/test_feature_names.csv"
+                          ],
+              "train_db": ["./data/sqlite/covid_train.sqlite",
+                           "./data/flat_files/train_data.csv",
+                          "./data/flat_files/train_feature_names.csv"]
               }
 
 
@@ -22,9 +30,7 @@ feature_qry = open(feature_qry_sql, "r").read()
 #### TO DO: 
     ### change this into a function so that it's not so clunky as a loop 
     ### maybe make this a class with multiple method for loading, cleaning, output
-    ###
-    ### ValueError: Index contains duplicate entries, cannot reshape
-    ####
+    
 for db in input_dict:
     # connect to db
     db_con = sqlite3.connect(input_dict[db][0])
@@ -36,12 +42,15 @@ for db in input_dict:
     features = pd.read_sql_query(feature_qry, db_con)
     
     # clean descriptions and codes
-    features['CODE'] = features['SOURCE']+features['CODE'].astype(str)
-    features['DESCRIPTION'] = pts_conditions['DESCRIPTION'].replace('\W', '', regex=True)
-    features['DESCRIPTION'] = features['SOURCE']+pts_conditions['DESCRIPTION']
+    features['ALL_CODES'] = features['SOURCE']+features['ALL_CODES'].astype(str)
+    features['ALL_DESCRIPTIONS'] = features['ALL_DESCRIPTIONS'].replace('\W', '', regex=True)
+    features['ALL_DESCRIPTIONS'] = features['SOURCE']+features['ALL_DESCRIPTIONS']
+    
+    # aggregate to remove duplicates
+    features_grouped = features.groupby(['PATIENT', 'ALL_DESCRIPTIONS']).sum().reset_index()
     
     # pivot data 
-    features_wide = features.pivot(index = "PATIENT", columns = "DESCRIPTION", values = "num")
+    features_wide = features_grouped.pivot(index = "PATIENT", columns = "ALL_DESCRIPTIONS", values = "num")
     
     # merge with the patient data
     pts_features = pd.merge(pts, features_wide, left_on = 'Id', right_on = 'PATIENT', how = 'left')
@@ -61,6 +70,9 @@ for db in input_dict:
     pts_features.ETHNICITY = pts_features.ETHNICITY.replace("hispanic", 1) 
     
     # write data 
+    pts_features.to_csv(input_dict[db][1], index = False)
     
+    # write the feature column names 
+    pd.DataFrame(features_wide.columns.values).to_csv(input_dict[db][2], index = False, header=['FeatureNames'])
 
 

@@ -38,23 +38,23 @@ input_dict = {"test_db": ["./data/csv/test/", "./data/sqlite/", "covid_test.sqli
               "train_db": ["./data/csv/train/", "./data/sqlite/", "covid_train.sqlite"]
               }
 
-sql_files = ["./code/sql/INDEX_statements.sql",
-             "./code/sql/UPDATE_statements.sql",
+sql_files = [#"./code/sql/INDEX_statements.sql",
+             #"./code/sql/UPDATE_statements.sql",
              "./code/sql/TABLE_statements.sql"
              ]
 
 ### loop to create dbs 
-print("Creating Databases!")
-for i in input_dict:
-    # print starting
-    print("prepararing: ", i, "\n")
+# print("Creating Databases!")
+# for i in input_dict:
+#     # print starting
+#     print("preparing: ", i, "\n")
     
-    ### create dbs 
-    # create train db
-    CreateCovidDB(input_dict[i][0], input_dict[i][1], input_dict[i][2])
+#     ### create dbs 
+#     # create train db
+#     CreateCovidDB(input_dict[i][0], input_dict[i][1], input_dict[i][2])
 
-    # print confirmation
-    print("finished creating: ", i, "\n\n\n")
+#     # print confirmation
+#     print("finished creating: ", i, "\n\n")
 
 
 ### loop to run sql
@@ -74,5 +74,5 @@ for i in input_dict:
         print("***************************\n")
     
     # print confirmation
-    print("finished running sql statements for: ", i, "\n\n\n")
+    print("finished running sql statements for: ", i, "\n\n")
 ############################################################
